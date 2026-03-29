@@ -1,0 +1,213 @@
+/* Admin-specific styles - imported directly in admin/page.tsx */
+
+/* ── PIN Screen ── */
+.pin-screen {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0f2f7 0%, #e8eaf6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.pin-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 44px 40px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.14);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  text-align: center;
+}
+.pin-logo { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.pin-logo h1 { font-size: 1.5rem; font-weight: 800; color: #111827; letter-spacing: -.4px; }
+.pin-logo p  { font-size: .88rem; color: #6b7280; }
+.pin-form { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.pin-input {
+  width: 100%; padding: 13px 16px;
+  border: 1.5px solid #e5e7eb; border-radius: 12px;
+  font-size: 1rem; text-align: center; letter-spacing: 4px;
+  outline: none; font-family: inherit;
+  transition: border-color .2s;
+}
+.pin-input:focus { border-color: #4f46e5; }
+.pin-error { font-size: .82rem; color: #ef4444; font-weight: 500; }
+.pin-submit-btn { width: 100%; margin-top: 4px; }
+.pin-hint { font-size: .78rem; color: #9ca3af; }
+.pin-hint code { background: #f3f4f6; padding: 2px 7px; border-radius: 5px; font-family: monospace; }
+.pin-back-link { display: flex; align-items: center; gap: 4px; font-size: .82rem; color: #4f46e5; font-weight: 600; }
+
+/* ── Admin Page ── */
+.admin-page { min-height: 100vh; background: #f0f2f7; }
+.admin-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 36px; background: #ffffff;
+  border-bottom: 1px solid #e5e7eb; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  flex-wrap: wrap; gap: 12px; position: sticky; top: 0; z-index: 50;
+}
+.admin-header-left { display: flex; align-items: center; gap: 14px; }
+.admin-title { font-size: 1.25rem; font-weight: 800; color: #111827; letter-spacing: -.4px; }
+.admin-subtitle { font-size: .82rem; color: #6b7280; margin-top: 2px; }
+.admin-header-right { display: flex; align-items: center; gap: 10px; }
+.admin-back-btn { display: flex; align-items: center; gap: 6px; }
+.admin-body { padding: 32px 36px 80px; max-width: 1200px; }
+
+/* ── Stats ── */
+.admin-stats-row { display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+.stat-card {
+  display: flex; align-items: center; gap: 14px;
+  background: #ffffff; border: 1px solid #e5e7eb; border-radius: 14px;
+  padding: 18px 24px; flex: 1; min-width: 180px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.stat-card-warn { border-color: #fde68a; background: #fffbeb; }
+.stat-icon { flex-shrink: 0; }
+.stat-value { font-size: 1.3rem; font-weight: 800; color: #111827; line-height: 1; }
+.stat-label { font-size: .78rem; color: #6b7280; margin-top: 3px; }
+
+/* ── Section ── */
+.admin-section {
+  background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px;
+  padding: 24px 28px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.section-header h2 { font-size: 1.05rem; font-weight: 700; color: #111827; }
+.section-badge {
+  margin-left: auto; background: #ede9fe; color: #5b21b6;
+  padding: 3px 10px; border-radius: 20px; font-size: .75rem; font-weight: 600;
+}
+
+/* ── Resume upload zone ── */
+.resume-upload-zone {
+  border: 2px dashed #a5b4fc; border-radius: 14px; padding: 40px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  cursor: pointer; transition: background .2s, border-color .2s; background: #f8f8ff;
+}
+.resume-upload-zone:hover { background: #eef2ff; border-color: #4f46e5; }
+.resume-configured-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 16px 20px; background: #f0fdf4;
+  border: 1.5px solid #6ee7b7; border-radius: 12px; flex-wrap: wrap;
+}
+.resume-configured-left { display: flex; align-items: center; gap: 12px; }
+.resume-configured-name { font-size: .95rem; font-weight: 700; color: #111827; }
+.resume-configured-sub { font-size: .78rem; color: #6b7280; margin-top: 2px; }
+.resume-configured-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Jobs toolbar ── */
+.admin-jobs-toolbar { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+
+/* ── Jobs table ── */
+.admin-jobs-table-wrap { overflow-x: auto; border-radius: 10px; border: 1.5px solid #e5e7eb; }
+.admin-jobs-table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+.admin-jobs-table thead tr { background: #f8f9fb; }
+.admin-jobs-table th {
+  padding: 12px 16px; text-align: left; font-weight: 700; color: #6b7280;
+  font-size: .78rem; text-transform: uppercase; letter-spacing: .5px;
+  border-bottom: 1.5px solid #e5e7eb; white-space: nowrap;
+}
+.admin-jobs-table td { padding: 12px 16px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; color: #111827; }
+.admin-jobs-table tr:last-child td { border-bottom: none; }
+.admin-jobs-table tr:hover td { background: #f8f9fb; }
+.table-job-title { font-weight: 600; }
+.table-job-id { font-size: .72rem; color: #9ca3af; margin-top: 2px; }
+.dept-tag-sm { background: #ede9fe; color: #5b21b6; padding: 2px 8px; border-radius: 20px; font-size: .73rem; font-weight: 600; }
+.score-badge { display: inline-block; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; font-size: .8rem; font-weight: 800; }
+.score-1 { background: #e0e7ff; color: #3730a3; }
+.score-2 { background: #fef3c7; color: #92400e; }
+.score-3 { background: #d1fae5; color: #065f46; }
+.table-link { display: inline-flex; align-items: center; gap: 4px; color: #4f46e5; font-size: .8rem; font-weight: 600; }
+.table-link:hover { text-decoration: underline; }
+.table-no-link { color: #9ca3af; }
+.table-actions { display: flex; gap: 6px; }
+.tbl-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid #e5e7eb; background: #ffffff; transition: all .18s; cursor: pointer; }
+.edit-btn { color: #4f46e5; }
+.edit-btn:hover { background: #ede9fe; border-color: #4f46e5; }
+.del-btn { color: #ef4444; }
+.del-btn:hover { background: #fee2e2; border-color: #ef4444; }
+
+/* ── Admin modal ── */
+.admin-modal-box { max-width: 640px !important; max-height: 90vh; overflow-y: auto; }
+.admin-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.col-span-2 { grid-column: span 2; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: .8rem; font-weight: 600; color: #6b7280; }
+.form-input {
+  padding: 9px 12px; border: 1.5px solid #e5e7eb; border-radius: 9px;
+  font-size: .875rem; font-family: inherit; color: #111827; outline: none;
+  background: #f0f2f7; transition: border-color .2s;
+}
+.form-input:focus { border-color: #4f46e5; background: #ffffff; }
+.form-textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
+
+/* ── Shared admin buttons ── */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 7px; padding: 10px 20px;
+  background: #4f46e5; color: #fff; border-radius: 10px; font-size: .875rem;
+  font-weight: 700; transition: background .2s; border: none; cursor: pointer; font-family: inherit;
+}
+.btn-primary:hover:not(:disabled) { background: #4338ca; }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px;
+  background: #ffffff; color: #111827; border-radius: 10px; font-size: .875rem;
+  font-weight: 600; border: 1.5px solid #e5e7eb; cursor: pointer; font-family: inherit;
+  transition: border-color .18s; text-decoration: none;
+}
+.btn-secondary:hover { border-color: #4f46e5; }
+.btn-danger-outline {
+  display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px;
+  background: transparent; color: #ef4444; border-radius: 10px; font-size: .875rem;
+  font-weight: 600; border: 1.5px solid #fca5a5; cursor: pointer; font-family: inherit; transition: all .18s;
+}
+.btn-danger-outline:hover { background: #fee2e2; border-color: #ef4444; }
+
+/* ── Admin toast ── */
+.admin-toast {
+  position: fixed; top: 20px; right: 24px; z-index: 9999;
+  background: #1e2235; color: #fff; padding: 12px 20px; border-radius: 12px;
+  font-size: .9rem; font-weight: 600; box-shadow: 0 8px 32px rgba(0,0,0,.25);
+  animation: adm-slideUp .25s ease;
+}
+@keyframes adm-slideUp {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Admin modal overlay ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center;
+  z-index: 999; padding: 20px; animation: adm-fadeIn .2s ease;
+}
+.modal-box {
+  background: #ffffff; border-radius: 18px; padding: 28px; width: 100%;
+  max-width: 440px; box-shadow: 0 24px 80px rgba(0,0,0,.22);
+}
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.modal-header h3 { font-size: 1.1rem; font-weight: 700; color: #111827; }
+.modal-close { padding: 5px; border-radius: 8px; color: #6b7280; transition: background .15s; cursor: pointer; border: none; background: none; font-family: inherit; }
+.modal-close:hover { background: #e5e7eb; }
+@keyframes adm-fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── Misc ── */
+.upload-main-text { font-weight: 600; font-size: .9rem; color: #111827; }
+.upload-sub-text { font-size: .78rem; color: #6b7280; }
+.center-state { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 80px 0; color: #6b7280; font-size: .95rem; }
+.empty-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 80px 0; color: #6b7280; }
+.empty-title { font-size: 1.05rem; font-weight: 700; color: #111827; }
+.empty-sub { font-size: .85rem; }
+.spin { animation: adm-spin .8s linear infinite; }
+@keyframes adm-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 768px) {
+  .admin-body { padding: 20px 16px 60px; }
+  .admin-header { padding: 16px 20px; }
+  .admin-form-grid { grid-template-columns: 1fr; }
+  .col-span-2 { grid-column: span 1; }
+  .admin-jobs-toolbar { flex-direction: column; }
+}
