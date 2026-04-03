@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { collection, onSnapshot, setDoc, doc, deleteDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from './firebase';
-import { Candidate, AuthUser } from './types';
+import { Candidate, AuthUser, SubmittedApplication } from './types';
 
 interface AuthContextType {
   currentUser: AuthUser | null;
@@ -12,14 +12,21 @@ interface AuthContextType {
   logout: () => void;
   createCandidate: (username: string, pass: string) => Promise<boolean>;
   deleteCandidate: (id: string) => Promise<void>;
-  markJobSubmitted: (candidateId: string, jobId: string) => Promise<void>;
+  markJobSubmitted: (
+    candidateId: string,
+    jobId: string,
+    jobTitle: string,
+    company: string,
+    department: string,
+  ) => Promise<void>;
+  markJobOptimized: (candidateId: string, jobId: string) => Promise<void>;
+  hideJob: (candidateId: string, jobId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const ADMIN_USER: AuthUser = { id: 'admin-id', role: 'admin', username: 'admin' };
 const ADMIN_PASS = 'adminnextgen';
-
 const STORAGE_KEY_AUTH = 'tjp_auth_session';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -27,13 +34,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load candidates from Firestore and check session
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'candidates'), (snapshot) => {
-      const loaded = snapshot.docs.map(d => d.data() as Candidate);
+      const loaded = snapshot.docs.map(d => {
+        const data = d.data();
+        // Backward-compat: populate submissions if missing
+        return {
+          ...data,
+          submissions: data.submissions ?? [],
+          completedJobIds: data.completedJobIds ?? [],
+          optimizedJobIds: data.optimizedJobIds ?? [],
+          hiddenJobIds: data.hiddenJobIds ?? [],
+        } as Candidate;
+      });
       setCandidates(loaded);
 
-      // Check strictly client-side session storage for active user
       const session = sessionStorage.getItem(STORAGE_KEY_AUTH);
       if (session) {
         const parsedSession = JSON.parse(session);
@@ -50,18 +65,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Firestore Auth error:', err);
       setLoading(false);
     });
-
     return () => unsub();
   }, []);
 
   const login = useCallback((uname: string, pass: string) => {
     if (uname === 'admin' && pass === ADMIN_PASS) {
-      const user = ADMIN_USER;
-      sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(user));
-      setCurrentUser(user);
-      return user;
+      sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(ADMIN_USER));
+      setCurrentUser(ADMIN_USER);
+      return ADMIN_USER;
     }
-
     const cand = candidates.find(c => c.username === uname && c.password === pass);
     if (cand) {
       const user: AuthUser = { id: cand.id, role: 'candidate', username: cand.username };
@@ -69,7 +81,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCurrentUser(user);
       return user;
     }
-
     return null;
   }, [candidates]);
 
@@ -81,15 +92,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const createCandidate = useCallback(async (uname: string, pass: string) => {
     const exists = candidates.some(c => c.username === uname);
     if (exists) return false;
-
     const id = `cand_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-    const newCand: Candidate = {
-      id,
-      username: uname,
-      password: pass,
-      completedJobIds: [],
-    };
-    
+    const newCand: Candidate = { id, username: uname, password: pass, completedJobIds: [], submissions: [], optimizedJobIds: [], hiddenJobIds: [] };
     try {
       await setDoc(doc(db, 'candidates', id), newCand);
       return true;
@@ -100,30 +104,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [candidates]);
 
   const deleteCandidate = useCallback(async (id: string) => {
-    try {
-      await deleteDoc(doc(db, 'candidates', id));
-    } catch (e) { console.error('Error deleting candidate', e); }
+    try { await deleteDoc(doc(db, 'candidates', id)); }
+    catch (e) { console.error('Error deleting candidate', e); }
   }, []);
 
-  const markJobSubmitted = useCallback(async (candidateId: string, jobId: string) => {
+  const markJobSubmitted = useCallback(async (
+    candidateId: string,
+    jobId: string,
+    jobTitle: string,
+    company: string,
+    department: string,
+  ) => {
+    const submission: SubmittedApplication = {
+      jobId,
+      jobTitle,
+      company,
+      department,
+      submittedAt: new Date().toISOString(),
+    };
     try {
       await updateDoc(doc(db, 'candidates', candidateId), {
-        completedJobIds: arrayUnion(jobId)
+        completedJobIds: arrayUnion(jobId),
+        submissions: arrayUnion(submission),
       });
     } catch (e) { console.error('Error marking submitted', e); }
   }, []);
 
+  const markJobOptimized = useCallback(async (candidateId: string, jobId: string) => {
+    try {
+      await updateDoc(doc(db, 'candidates', candidateId), {
+        optimizedJobIds: arrayUnion(jobId)
+      });
+    } catch (e) {
+      console.error('Error marking job optimized', e);
+    }
+  }, []);
+
+  const hideJob = useCallback(async (candidateId: string, jobId: string) => {
+    try {
+      await updateDoc(doc(db, 'candidates', candidateId), {
+        hiddenJobIds: arrayUnion(jobId)
+      });
+    } catch (e) {
+      console.error('Error hiding job', e);
+    }
+  }, []);
+
   return (
-    <AuthContext.Provider value={{
-      currentUser,
-      candidates,
-      loading,
-      login,
-      logout,
-      createCandidate,
-      deleteCandidate,
-      markJobSubmitted
-    }}>
+    <AuthContext.Provider value={{ currentUser, candidates, loading, login, logout, createCandidate, deleteCandidate, markJobSubmitted, markJobOptimized, hideJob }}>
       {children}
     </AuthContext.Provider>
   );
@@ -131,8 +159,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }

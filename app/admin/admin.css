@@ -211,3 +211,92 @@
   .col-span-2 { grid-column: span 1; }
   .admin-jobs-toolbar { flex-direction: column; }
 }
+
+/* ── Tab Navigation ── */
+.admin-tab-nav {
+  display: flex;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 6px;
+  margin-bottom: 24px;
+  width: fit-content;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.admin-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.18s, color 0.18s;
+  white-space: nowrap;
+}
+.admin-tab-btn:hover { background: #f3f4f6; color: #111827; }
+.admin-tab-active {
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(79,70,229,.35);
+}
+
+/* ── Application Tracker Cards ── */
+.tracker-card {
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.tracker-card:hover { border-color: #a5b4fc; box-shadow: 0 2px 12px rgba(79,70,229,.08); }
+.tracker-card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.15s;
+}
+.tracker-card-header:hover { background: #f8f9fb; }
+.tracker-cand-info { display: flex; align-items: center; gap: 14px; }
+.tracker-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #818cf8);
+  color: #fff; font-size: 1rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.tracker-cand-name { font-size: 0.95rem; font-weight: 700; color: #111827; }
+.tracker-cand-sub  { font-size: 0.78rem; color: #6b7280; margin-top: 2px; }
+.tracker-count-badge {
+  background: #ede9fe; color: #5b21b6;
+  padding: 4px 12px; border-radius: 20px;
+  font-size: 0.85rem; font-weight: 700;
+}
+.tracker-detail {
+  border-top: 1.5px solid #e5e7eb;
+  padding: 16px 20px;
+  background: #f8f9fb;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.tracker-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+

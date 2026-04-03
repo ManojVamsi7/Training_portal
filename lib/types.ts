@@ -12,15 +12,27 @@ export interface Job {
   postedDate: string;
   experience: string;
   matchScore: number;
+  uploadedAt?: string; // ISO timestamp — set when admin uploads the job. Optional for backward compat.
 }
 
 export type OptimizeStatus = 'idle' | 'processing' | 'complete';
 
+export interface SubmittedApplication {
+  jobId: string;
+  jobTitle: string;
+  company: string;
+  department: string;
+  submittedAt: string; // ISO timestamp e.g. "2026-04-04T10:30:00.000Z"
+}
+
 export interface Candidate {
   id: string;
   username: string;
-  password?: string; // Optional so we don't accidentally leak it in bad places, though we'll keep it simple for local storage
-  completedJobIds: string[];
+  password?: string;
+  completedJobIds: string[];          // kept for fast dashboard filtering
+  submissions: SubmittedApplication[]; // rich submission records
+  optimizedJobIds?: string[];         // jobs the candidate has optimized (bypasses timer)
+  hiddenJobIds?: string[];            // jobs the candidate has manually hidden (expired/closed)
 }
 
 export interface AuthUser {

@@ -33,23 +33,7 @@ export default function Sidebar() {
           </Link>
         ))}
 
-        <div className="sidebar-section-divider" />
-
-        <Link
-          href="/admin"
-          className={`sidebar-nav-item admin-nav-link${pathname === '/admin' ? ' active' : ''}`}
-        >
-          <ShieldCheck size={18} />
-          <span>Admin Portal</span>
-        </Link>
       </nav>
-
-      <div className="sidebar-premium-card">
-        <Star size={16} className="premium-star" />
-        <p className="premium-title">Premium Features</p>
-        <p className="premium-sub">Unlock advanced tools</p>
-        <p className="premium-version">Resume Optimizer v1.0</p>
-      </div>
     </aside>
   );
 }

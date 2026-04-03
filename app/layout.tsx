@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Outfit } from 'next/font/google';
 import './globals.css';
 import { JobsProvider } from '@/lib/JobsContext';
 import { AdminResumeProvider } from '@/lib/AdminResumeContext';
 import { AuthProvider } from '@/lib/AuthContext';
 
-const inter = Inter({ subsets: ['latin'] });
+const outfit = Outfit({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Training Job Portal — Resume Optimizer Simulator',
@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       {/* suppressHydrationWarning fixes browser-extension attribute injection (e.g. bis_skin_checked) */}
-      <body className={`${inter.className} app-body`} suppressHydrationWarning>
+      <body className={`${outfit.className} app-body`} suppressHydrationWarning>
         <AuthProvider>
           <JobsProvider>
             <AdminResumeProvider>

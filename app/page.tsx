@@ -58,9 +58,10 @@ export default function HomePage() {
   const filtered = useMemo(() => {
     const myCand = candidates.find(c => c.id === currentUser?.id);
     const completedIds = myCand?.completedJobIds || [];
+    const hiddenIds = myCand?.hiddenJobIds || [];
     
-    // First remove completed jobs
-    let r = jobs.filter(j => !completedIds.includes(j.id));
+    // Remove completed and hidden jobs
+    let r = jobs.filter(j => !completedIds.includes(j.id) && !hiddenIds.includes(j.id));
     
     if (search) {
       const q = search.toLowerCase();
@@ -88,6 +89,12 @@ export default function HomePage() {
   const onCompany  = useCallback((c: string) => { setCompany(c);        setPage(1); }, []);
   const onLocation = useCallback((l: string) => { setLocation(l);       setPage(1); }, []);
   const onDept     = useCallback((d: string) => { setDept(d);           setPage(1); }, []);
+
+  // Calculate today's stats
+  const myCand = candidates.find(c => c.id === currentUser?.id);
+  const totalSubmissions = myCand?.submissions?.length || 0;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todaySubmissions = myCand?.submissions?.filter(s => s.submittedAt.startsWith(todayStr)).length || 0;
 
   return (
     <div className="app-layout">
@@ -119,6 +126,17 @@ export default function HomePage() {
               >
                 Sign Out
               </button>
+            </div>
+          </div>
+
+          {/* Today's Stats Banner */}
+          <div className="stats-banner">
+            <div className="stats-banner-circle">
+              {todaySubmissions}
+            </div>
+            <div>
+              <p className="stats-banner-title">Applications submitted today</p>
+              <p className="stats-banner-sub">You have submitted {totalSubmissions} total applications on this portal.</p>
             </div>
           </div>
 

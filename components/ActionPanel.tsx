@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Download, Zap, ExternalLink,
-  CheckCircle, AlertCircle, Loader2, Lock, ShieldAlert,
+  CheckCircle, AlertCircle, Loader2, Lock, ShieldAlert, EyeOff,
 } from 'lucide-react';
 import { OptimizeStatus } from '@/lib/types';
 import { useAdminResume } from '@/lib/AdminResumeContext';
@@ -18,7 +18,6 @@ const OPTIMIZE_MESSAGES = [
   'Finalizing optimized resume…',
 ];
 
-// Random between 10 000 ms and 15 000 ms
 function randomDuration() {
   return 10_000 + Math.floor(Math.random() * 5_000);
 }
@@ -28,16 +27,19 @@ const TICK_MS = 200;
 interface ActionPanelProps {
   jobId: string;
   jobUrl: string;
+  jobTitle: string;
+  company: string;
+  department: string;
 }
 
-export default function ActionPanel({ jobId, jobUrl }: ActionPanelProps) {
+export default function ActionPanel({ jobId, jobUrl, jobTitle, company, department }: ActionPanelProps) {
   const { adminResume, downloadAdminResume } = useAdminResume();
-  const { currentUser, markJobSubmitted } = useAuth();
+  const { currentUser, candidates, markJobSubmitted, markJobOptimized, hideJob } = useAuth();
 
   const [status, setStatus] = useState<OptimizeStatus>('idle');
   const [progress, setProgress] = useState(0);
   const [msgIndex, setMsgIndex] = useState(0);
-  const [downloaded, setDownloaded] = useState(false); // unlocks Apply
+  const [downloaded, setDownloaded] = useState(false);
   const [showNoResume, setShowNoResume] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [hasClickedApply, setHasClickedApply] = useState(false);
@@ -57,6 +59,7 @@ export default function ActionPanel({ jobId, jobUrl }: ActionPanelProps) {
       return;
     }
     if (status === 'processing' || status === 'complete') return;
+    if (isSubmittedState.current) return;
 
     duration.current = randomDuration();
     setStatus('processing');
@@ -79,9 +82,33 @@ export default function ActionPanel({ jobId, jobUrl }: ActionPanelProps) {
         setProgress(100);
         setMsgIndex(OPTIMIZE_MESSAGES.length - 1);
         setStatus('complete');
+        if (currentUser) {
+          markJobOptimized(currentUser.id, jobId);
+        }
       }
     }, TICK_MS);
-  }, [adminResume, status]);
+  }, [adminResume, status, currentUser, jobId, markJobOptimized]);
+
+  const isSubmittedState = useRef(false);
+
+  // Derive permanent state on mount
+  useEffect(() => {
+    if (!currentUser) return;
+    const candData = candidates.find(c => c.id === currentUser.id);
+    if (!candData) return;
+
+    const isSubmitted = candData.completedJobIds?.includes(jobId);
+    const isOptimized = isSubmitted || candData.optimizedJobIds?.includes(jobId);
+
+    if (isSubmitted) {
+      isSubmittedState.current = true;
+      setStatus('complete');
+      setDownloaded(true);
+      setHasClickedApply(true);
+    } else if (isOptimized && status === 'idle') {
+      setStatus('complete');
+    }
+  }, [currentUser, candidates, jobId]);
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
@@ -104,7 +131,13 @@ export default function ActionPanel({ jobId, jobUrl }: ActionPanelProps) {
 
   const handleSubmitCompletion = () => {
     if (currentUser) {
-      markJobSubmitted(currentUser.id, jobId);
+      markJobSubmitted(currentUser.id, jobId, jobTitle, company, department);
+    }
+  };
+
+  const handleHide = () => {
+    if (currentUser && confirm('Are you sure you want to hide this job? It will be permanently removed from your dashboard.')) {
+      hideJob(currentUser.id, jobId);
     }
   };
 
@@ -140,7 +173,7 @@ export default function ActionPanel({ jobId, jobUrl }: ActionPanelProps) {
       {status === 'complete' && (
         <div className="optimize-complete-block">
           <CheckCircle size={15} />
-          <span>Optimization Complete</span>
+          <span>{isSubmittedState.current ? 'Application Submitted' : 'Optimization Complete'}</span>
         </div>
       )}
 
@@ -200,26 +233,44 @@ export default function ActionPanel({ jobId, jobUrl }: ActionPanelProps) {
         </div>
       </div>
 
-      {/* ── Step 3: Apply button — enabled only after download ── */}
-      <button
-        id={`btn-apply-${jobId}`}
-        className={`btn-apply${applyEnabled ? '' : ' btn-apply-disabled'}`}
-        onClick={handleApply}
-        disabled={!applyEnabled}
-        title={
-          !downloaded
-            ? 'Download your optimized resume first to unlock Apply'
-            : !hasValidUrl
-            ? 'No job link available'
-            : 'Open job application on LinkedIn'
-        }
-      >
-        <ExternalLink size={16} />
-        <span>Apply for this Position</span>
-      </button>
+      {/* ── Step 3: Apply button + Hide Job row ── */}
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <button
+          id={`btn-apply-${jobId}`}
+          className={`btn-apply${applyEnabled ? '' : ' btn-apply-disabled'}`}
+          style={{ flex: 1 }}
+          onClick={handleApply}
+          disabled={!applyEnabled}
+          title={
+            !downloaded
+              ? 'Download your optimized resume first to unlock Apply'
+              : !hasValidUrl
+              ? 'No job link available'
+              : 'Open job application on LinkedIn'
+          }
+        >
+          <ExternalLink size={16} />
+          <span>Apply for this Position</span>
+        </button>
+
+        <button
+          onClick={handleHide}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '0 12px', borderRadius: '8px', border: '1px solid #fee2e2',
+            background: '#fff', color: '#ef4444', cursor: 'pointer',
+            transition: 'background 0.2s',
+          }}
+          title="Job expired on LinkedIn? Hide it permanently."
+          onMouseOver={(e) => e.currentTarget.style.background = '#fef2f2'}
+          onMouseOut={(e) => e.currentTarget.style.background = '#fff'}
+        >
+          <EyeOff size={18} />
+        </button>
+      </div>
 
       {/* ── Step 4: Submit Completion ── */}
-      {hasClickedApply && (
+      {hasClickedApply && !isSubmittedState.current && (
         <button
           className="btn-apply mt-3 !bg-green-600 hover:!bg-green-700 !text-white !border-none"
           onClick={handleSubmitCompletion}

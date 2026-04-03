@@ -66,6 +66,8 @@ export async function parseJobsCSV(csvText: string): Promise<Job[]> {
       complete: (results) => {
         const headers = results.meta.fields || [];
         const mapping = buildColumnMapping(headers);
+        // All jobs in one upload share the same timestamp so they group cleanly by day
+        const batchTime = new Date().toISOString();
 
         const jobs: Job[] = (results.data as Record<string, string>[])
           .map((row, index) => {
@@ -87,6 +89,7 @@ export async function parseJobsCSV(csvText: string): Promise<Job[]> {
               postedDate: get('postedDate') || '',
               experience: get('experience') || '',
               matchScore: generateMatchScore(),
+              uploadedAt: batchTime,
             };
           })
           .filter((job) => job.title);

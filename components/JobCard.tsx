@@ -104,7 +104,7 @@ export default function JobCard({ job }: JobCardProps) {
 
       {/* Action panel */}
       <div className="job-card-actions">
-        <ActionPanel jobId={job.id} jobUrl={job.jobUrl} />
+        <ActionPanel jobId={job.id} jobUrl={job.jobUrl} jobTitle={job.title} company={job.company} department={job.department} />
       </div>
     </div>
   );
