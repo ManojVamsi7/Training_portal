@@ -75,6 +75,14 @@ export default function HomePage() {
     if (companyFilter)  r = r.filter(j => j.company  === companyFilter);
     if (locationFilter) r = r.filter(j => j.location === locationFilter);
     if (deptFilter)     r = r.filter(j => j.department === deptFilter);
+
+    // Sort newest-first by upload date; jobs without uploadedAt fall to the bottom
+    r = r.slice().sort((a, b) => {
+      const tA = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+      const tB = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+      return tB - tA;
+    });
+
     return r;
   }, [jobs, search, companyFilter, locationFilter, deptFilter, candidates, currentUser?.id]);
 
