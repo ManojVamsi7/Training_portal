@@ -28,6 +28,18 @@ function formatDate(raw: string): string {
   } catch { return raw; }
 }
 
+function formatUploadDate(iso: string | undefined): string {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  } catch { return ''; }
+}
+
 const PREVIEW_LEN = 300;
 
 export default function JobCard({ job }: JobCardProps) {
@@ -74,6 +86,11 @@ export default function JobCard({ job }: JobCardProps) {
           )}
           {job.location && (
             <span className="meta-item"><MapPin size={13} />{job.location}</span>
+          )}
+          {job.uploadedAt && (
+            <span className="meta-item" style={{ color: '#7c3aed', fontWeight: 600 }}>
+              <Calendar size={13} />Posted on {formatUploadDate(job.uploadedAt)}
+            </span>
           )}
           {!job.jobUrl && (
             <span className="meta-item meta-no-link" title="No job link">
