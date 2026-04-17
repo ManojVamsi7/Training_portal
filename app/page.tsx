@@ -17,7 +17,7 @@ const PAGE_SIZE = 8;
 
 export default function HomePage() {
   const { jobs, loading } = useJobs();
-  const { adminResume } = useAdminResume();
+  const { getResumeById } = useAdminResume();
   const { currentUser, candidates, loading: authLoading, logout } = useAuth();
   const router = useRouter();
 
@@ -98,11 +98,14 @@ export default function HomePage() {
   const onLocation = useCallback((l: string) => { setLocation(l);       setPage(1); }, []);
   const onDept     = useCallback((d: string) => { setDept(d);           setPage(1); }, []);
 
-  // Calculate today's stats
+  // Today's stats
   const myCand = candidates.find(c => c.id === currentUser?.id);
   const totalSubmissions = myCand?.submissions?.length || 0;
   const todayStr = new Date().toISOString().split('T')[0];
   const todaySubmissions = myCand?.submissions?.filter(s => s.submittedAt.startsWith(todayStr)).length || 0;
+
+  // Candidate-specific resume
+  const myResume = getResumeById(myCand?.assignedResumeId);
 
   return (
     <div className="app-layout">
@@ -117,15 +120,15 @@ export default function HomePage() {
               <p className="page-subtitle">Jobs that match the student&apos;s profile and experience</p>
             </div>
             <div className="header-actions">
-              {adminResume ? (
+              {myResume ? (
                 <span className="resume-indicator hidden sm:flex">
                   <CheckCircle size={14} />
-                  Resume ready: {adminResume.name}
+                  Resume ready: {myResume.label || myResume.filename}
                 </span>
               ) : (
                 <span className="resume-missing-indicator hidden sm:flex">
                   <ShieldAlert size={14} />
-                  No resume set — contact Admin
+                  No resume assigned — contact Admin
                 </span>
               )}
               <button 
@@ -149,7 +152,7 @@ export default function HomePage() {
           </div>
 
           {/* Admin resume notice */}
-          {!adminResume && (
+          {!myResume && (
             <div className="admin-notice">
               <ShieldAlert size={16} />
               <span>
@@ -210,33 +213,51 @@ export default function HomePage() {
           )}
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="pagination">
-              <button
-                className="page-btn"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+          {totalPages > 1 && (() => {
+            // Build the windowed page list: always show first, last, current±2, with '…' gaps
+            const delta = 2;
+            const range: (number | '…')[] = [];
+            let prev = 0;
+            for (let n = 1; n <= totalPages; n++) {
+              if (n === 1 || n === totalPages || (n >= page - delta && n <= page + delta)) {
+                if (prev && n - prev > 1) range.push('…');
+                range.push(n);
+                prev = n;
+              }
+            }
+            return (
+              <div className="pagination">
                 <button
-                  key={n}
-                  className={`page-btn${n === page ? ' page-active' : ''}`}
-                  onClick={() => setPage(n)}
+                  className="page-btn"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
                 >
-                  {n}
+                  <ChevronLeft size={16} />
                 </button>
-              ))}
-              <button
-                className="page-btn"
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          )}
+                {range.map((n, i) =>
+                  n === '…' ? (
+                    <span key={`ellipsis-${i}`} className="page-btn" style={{ cursor: 'default', opacity: 0.45, pointerEvents: 'none' }}>…</span>
+                  ) : (
+                    <button
+                      key={n}
+                      className={`page-btn${n === page ? ' page-active' : ''}`}
+                      onClick={() => setPage(n as number)}
+                    >
+                      {n}
+                    </button>
+                  )
+                )}
+                <button
+                  className="page-btn"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            );
+          })()}
+
 
           {/* Hidden CSV input for future use */}
           <input ref={csvInputRef} type="file" accept=".csv" onChange={handleCSVUpload} style={{ display: 'none' }} />

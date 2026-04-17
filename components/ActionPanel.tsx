@@ -33,16 +33,35 @@ interface ActionPanelProps {
 }
 
 export default function ActionPanel({ jobId, jobUrl, jobTitle, company, department }: ActionPanelProps) {
-  const { adminResume, downloadAdminResume } = useAdminResume();
+  const { getResumeById, downloadResumeById } = useAdminResume();
   const { currentUser, candidates, markJobSubmitted, markJobOptimized, hideJob } = useAuth();
+
+  // Resolve the resume assigned to this specific candidate
+  const myCand = candidates.find(c => c.id === currentUser?.id);
+  const assignedResumeId = myCand?.assignedResumeId;
+  const myResume = getResumeById(assignedResumeId);
 
   const [status, setStatus] = useState<OptimizeStatus>('idle');
   const [progress, setProgress] = useState(0);
   const [msgIndex, setMsgIndex] = useState(0);
-  const [downloaded, setDownloaded] = useState(false);
+  // ── Persistent local state (survives page reloads) ──
+  // Key: "ap_{candidateId}_{jobId}" stored in localStorage
+  const storeKey = currentUser ? `ap_${currentUser.id}_${jobId}` : null;
+
+  const [downloaded, setDownloaded] = useState<boolean>(() => {
+    if (typeof window === 'undefined' || !storeKey) return false;
+    try { return JSON.parse(localStorage.getItem(storeKey) || '{}').downloaded === true; }
+    catch { return false; }
+  });
+  const [hasClickedApply, setHasClickedApply] = useState<boolean>(() => {
+    if (typeof window === 'undefined' || !storeKey) return false;
+    try { return JSON.parse(localStorage.getItem(storeKey) || '{}').hasClickedApply === true; }
+    catch { return false; }
+  });
+
+  // UI-only ephemeral states (no need to persist these)
   const [showNoResume, setShowNoResume] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
-  const [hasClickedApply, setHasClickedApply] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const elapsed = useRef(0);
@@ -53,7 +72,7 @@ export default function ActionPanel({ jobId, jobUrl, jobTitle, company, departme
   const applyEnabled = hasValidUrl && downloaded;
 
   const startOptimize = useCallback(() => {
-    if (!adminResume) {
+    if (!myResume) {
       setShowNoResume(true);
       setTimeout(() => setShowNoResume(false), 3500);
       return;
@@ -87,7 +106,7 @@ export default function ActionPanel({ jobId, jobUrl, jobTitle, company, departme
         }
       }
     }, TICK_MS);
-  }, [adminResume, status, currentUser, jobId, markJobOptimized]);
+  }, [myResume, status, currentUser, jobId, markJobOptimized]);
 
   const isSubmittedState = useRef(false);
 
@@ -114,11 +133,18 @@ export default function ActionPanel({ jobId, jobUrl, jobTitle, company, departme
 
   const handleDownload = () => {
     if (!downloadEnabled) return;
-    const ok = downloadAdminResume();
+    const ok = downloadResumeById(assignedResumeId);
     if (ok) {
       setDownloaded(true);
       setDownloadSuccess(true);
       setTimeout(() => setDownloadSuccess(false), 3000);
+      // Persist so state survives page reload
+      if (storeKey) {
+        try {
+          const prev = JSON.parse(localStorage.getItem(storeKey) || '{}');
+          localStorage.setItem(storeKey, JSON.stringify({ ...prev, downloaded: true }));
+        } catch { /* ignore storage errors */ }
+      }
     }
   };
 
@@ -126,12 +152,23 @@ export default function ActionPanel({ jobId, jobUrl, jobTitle, company, departme
     if (applyEnabled) {
       window.open(jobUrl, '_blank', 'noopener,noreferrer');
       setHasClickedApply(true);
+      // Persist so "Submit Application" button survives page reload
+      if (storeKey) {
+        try {
+          const prev = JSON.parse(localStorage.getItem(storeKey) || '{}');
+          localStorage.setItem(storeKey, JSON.stringify({ ...prev, hasClickedApply: true }));
+        } catch { /* ignore storage errors */ }
+      }
     }
   };
 
   const handleSubmitCompletion = () => {
     if (currentUser) {
       markJobSubmitted(currentUser.id, jobId, jobTitle, company, department);
+      // Clean up localStorage once fully submitted — no longer needed
+      if (storeKey) {
+        try { localStorage.removeItem(storeKey); } catch { /* ignore */ }
+      }
     }
   };
 
@@ -148,12 +185,12 @@ export default function ActionPanel({ jobId, jobUrl, jobTitle, company, departme
       {status === 'idle' && (
         <button
           id={`btn-optimize-${jobId}`}
-          className={`btn-optimize${!adminResume ? ' btn-optimize-warn' : ''}`}
+          className={`btn-optimize${!myResume ? ' btn-optimize-warn' : ''}`}
           onClick={startOptimize}
-          title={!adminResume ? 'Admin has not uploaded a resume yet' : 'Optimize for this job'}
+          title={!myResume ? 'No resume assigned — contact Admin' : 'Optimize for this job'}
         >
           <Zap size={16} />
-          <span>Optimize Resume{!adminResume ? ' First' : ''}</span>
+          <span>Optimize Resume{!myResume ? ' First' : ''}</span>
         </button>
       )}
 

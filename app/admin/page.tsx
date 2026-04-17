@@ -6,10 +6,10 @@ import {
   ShieldCheck, Upload, FileText, Trash2, Pencil, Plus,
   X, CheckCircle, Loader2, Building2, ExternalLink,
   Save, FileUp, Users, BarChart2, Calendar, ChevronDown, ChevronUp,
-  Eye, EyeOff,
+  Eye, EyeOff, BookOpen,
 } from 'lucide-react';
 import { useJobs } from '@/lib/JobsContext';
-import { useAdminResume } from '@/lib/AdminResumeContext';
+import { useAdminResume, AdminResume } from '@/lib/AdminResumeContext';
 import { useAuth } from '@/lib/AuthContext';
 import { parseJobsCSV } from '@/lib/csvParser';
 import { Job } from '@/lib/types';
@@ -104,9 +104,9 @@ type AdminTab = 'jobs' | 'candidates' | 'tracking';
 
 export default function AdminPage() {
   const router = useRouter();
-  const { currentUser, loading: authLoading, logout, candidates, createCandidate, deleteCandidate } = useAuth();
+  const { currentUser, loading: authLoading, logout, candidates, createCandidate, deleteCandidate, assignResume } = useAuth();
   const { jobs, addJob, addJobsBatch, updateJob, deleteJob, deleteJobsBatch, loading: jobsLoading } = useJobs();
-  const { adminResume, setAdminResume } = useAdminResume();
+  const { resumes, loading: resumeLoading, addResume, deleteResume } = useAdminResume();
 
   const [activeTab, setActiveTab]           = useState<AdminTab>('jobs');
   const [editJob, setEditJob]               = useState<Partial<Job> | null>(null);
@@ -114,7 +114,44 @@ export default function AdminPage() {
   const [toast, setToast]                   = useState('');
   const [csvParsing, setCsvParsing]         = useState(false);
   const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
-  const [jobDateFilter, setJobDateFilter]   = useState(''); // YYYY-MM-DD string for filtering by upload date
+  const [jobDateFilter, setJobDateFilter]   = useState('');
+
+  // ── Resume library state ──
+  const [newResumeLabel, setNewResumeLabel] = useState('');
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const resumeLibInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle file selection for resume library upload
+  const handleResumeLibUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+    if (ext !== '.pdf' && ext !== '.docx') {
+      showToast('❌ Only PDF or DOCX files are allowed.');
+      return;
+    }
+    const label = newResumeLabel.trim() || file.name.replace(/\.[^.]+$/, '');
+    setResumeUploading(true);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const data = ev.target?.result as string;
+      const resume: AdminResume = {
+        id: `resume_${Date.now()}`,
+        label,
+        filename: file.name,
+        data,
+        type: file.type || 'application/pdf',
+        uploadedAt: new Date().toISOString(),
+      };
+      await addResume(resume);
+      setNewResumeLabel('');
+      setResumeUploading(false);
+      showToast(`✅ Resume "${label}" added to library.`);
+    };
+    reader.onerror = () => { setResumeUploading(false); showToast('❌ Failed to read file.'); };
+    reader.readAsDataURL(file);
+  }, [addResume, newResumeLabel]);
 
   // ── Upload-date helpers ──
   function formatUploadDate(iso: string | undefined) {
@@ -145,8 +182,8 @@ export default function AdminPage() {
   const [expandedCandId, setExpandedCandId] = useState<string | null>(null);
   const [dateFilters, setDateFilters]        = useState<Record<string, string>>({});
 
-  const resumeInputRef = useRef<HTMLInputElement>(null);
-  const csvInputRef    = useRef<HTMLInputElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
+
 
   // Auth Guard
   useEffect(() => {
@@ -170,23 +207,6 @@ export default function AdminPage() {
   }
 
   // ── Resume Upload ──
-  const ALLOWED_TYPES = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-  const handleResumeUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
-    if (!ALLOWED_TYPES.includes(file.type) && ext !== '.pdf' && ext !== '.docx') {
-      showToast('❌ Only PDF or DOCX files are allowed.'); return;
-    }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const data = ev.target?.result as string;
-      setAdminResume({ name: file.name, data, type: file.type });
-      showToast(`✅ Resume "${file.name}" uploaded successfully.`);
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  }, [setAdminResume]);
 
   // ── CSV Upload ──
   const handleCSVUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -276,7 +296,6 @@ export default function AdminPage() {
     return <div className="center-state"><Loader2 className="spin" /> Loading Admin...</div>;
   }
 
-  const hasResume = Boolean(adminResume);
   const totalSubmissions = candidates.reduce((acc, c) => acc + (c.submissions?.length || 0), 0);
 
   return (
@@ -317,9 +336,9 @@ export default function AdminPage() {
             <BarChart2 size={20} className="stat-icon text-violet-500" />
             <div><p className="stat-value">{totalSubmissions}</p><p className="stat-label">Total Submissions</p></div>
           </div>
-          <div className={`stat-card${hasResume ? '' : ' stat-card-warn'}`}>
-            <FileText size={20} className={`stat-icon ${hasResume ? 'text-green-500' : 'text-amber-500'}`} />
-            <div><p className="stat-value">{hasResume ? 'Configured' : 'Not Set'}</p><p className="stat-label">Base Resume</p></div>
+          <div className={`stat-card${resumes.length === 0 ? ' stat-card-warn' : ''}`}>
+            <BookOpen size={20} className={`stat-icon ${resumes.length > 0 ? 'text-green-500' : 'text-amber-500'}`} />
+            <div><p className="stat-value">{resumes.length > 0 ? resumes.length : 'None'}</p><p className="stat-label">Resumes in Library</p></div>
           </div>
         </div>
 
@@ -341,34 +360,96 @@ export default function AdminPage() {
         ════════════════════════════ */}
         {activeTab === 'jobs' && (
           <>
-            {/* Resume */}
+            {/* ── Resume Library ── */}
             <section className="admin-section">
               <div className="section-header">
-                <FileText size={18} /><h2>Base Resume</h2>
-                <span className="section-badge">Candidates download this after optimization</span>
+                <BookOpen size={18} /><h2>Resume Library</h2>
+                <span className="section-badge">{resumes.length} resume{resumes.length !== 1 ? 's' : ''} uploaded</span>
               </div>
-              {hasResume ? (
-                <div className="resume-configured-card">
-                  <div className="resume-configured-left">
-                    <CheckCircle size={20} className="text-green-500" />
-                    <div>
-                      <p className="resume-configured-name">{adminResume!.name}</p>
-                      <p className="resume-configured-sub">This file will be downloaded by candidates as their &quot;optimized&quot; resume</p>
-                    </div>
-                  </div>
-                  <div className="resume-configured-actions">
-                    <button className="btn-secondary" onClick={() => resumeInputRef.current?.click()}><Upload size={14} /> Replace Resume</button>
-                    <button className="btn-danger-outline" onClick={() => { setAdminResume(null); showToast('Resume removed.'); }}><Trash2 size={14} /> Remove</button>
-                  </div>
+
+              {/* Upload form */}
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginBottom: '16px', flexWrap: 'wrap', padding: '16px', background: '#f8f9fb', borderRadius: '12px', border: '1.5px solid #e5e7eb' }}>
+                <div className="form-group" style={{ flex: '1 1 200px', margin: 0 }}>
+                  <label>Resume Label</label>
+                  <input
+                    className="form-input"
+                    placeholder="e.g. Resume A, Data Engineer Resume"
+                    value={newResumeLabel}
+                    onChange={e => setNewResumeLabel(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="btn-primary"
+                  onClick={() => resumeLibInputRef.current?.click()}
+                  disabled={resumeUploading}
+                  style={{ height: '40px' }}
+                >
+                  {resumeUploading ? <Loader2 size={15} className="spin" /> : <FileUp size={15} />}
+                  Upload Resume
+                </button>
+                <input ref={resumeLibInputRef} type="file" accept=".pdf,.docx" onChange={handleResumeLibUpload} style={{ display: 'none' }} />
+              </div>
+
+              {/* Resume list */}
+              {resumeLoading ? (
+                <div className="center-state" style={{ padding: '40px 0' }}><Loader2 size={24} className="spin text-indigo-500" /></div>
+              ) : resumes.length === 0 ? (
+                <div className="empty-state" style={{ padding: '40px 0' }}>
+                  <FileText size={36} />
+                  <p className="empty-title">No resumes uploaded yet</p>
+                  <p className="empty-sub">Add a label above and click Upload Resume to get started</p>
                 </div>
               ) : (
-                <div className="resume-upload-zone" onClick={() => resumeInputRef.current?.click()}>
-                  <FileUp size={32} className="text-indigo-400" />
-                  <p className="upload-main-text">Upload Base Resume</p>
-                  <p className="upload-sub-text">PDF or DOCX • Click to browse or drag and drop</p>
+                <div className="admin-jobs-table-wrap" style={{ maxHeight: '380px', overflowY: 'auto' }}>
+                  <table className="admin-jobs-table">
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                      <tr>
+                        <th>Label</th>
+                        <th>Filename</th>
+                        <th>Uploaded</th>
+                        <th>Assigned To</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resumes.map(r => {
+                        const assignedCount = candidates.filter(c => c.assignedResumeId === r.id).length;
+                        return (
+                          <tr key={r.id}>
+                            <td>
+                              <span style={{ fontWeight: 700, color: '#4f46e5' }}>{r.label}</span>
+                            </td>
+                            <td style={{ fontSize: '0.8rem', color: '#6b7280' }}>{r.filename}</td>
+                            <td>
+                              <span style={{ fontSize: '0.78rem', color: '#0369a1', background: '#f0f9ff', padding: '2px 7px', borderRadius: '6px', whiteSpace: 'nowrap' }}>
+                                {formatUploadDate(r.uploadedAt)}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ background: '#ede9fe', color: '#5b21b6', padding: '3px 8px', borderRadius: '12px', fontWeight: 700, fontSize: '0.8rem' }}>
+                                {assignedCount} candidate{assignedCount !== 1 ? 's' : ''}
+                              </span>
+                            </td>
+                            <td>
+                              <button
+                                className="tbl-btn del-btn"
+                                title="Delete this resume"
+                                onClick={() => {
+                                  if (!confirm(`Delete resume "${r.label}"? Candidates assigned to it will lose their resume.`)) return;
+                                  deleteResume(r.id);
+                                  showToast(`🗑️ Resume "${r.label}" deleted.`);
+                                }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )}
-              <input ref={resumeInputRef} type="file" accept=".pdf,.docx" onChange={handleResumeUpload} style={{ display: 'none' }} />
             </section>
 
             {/* Jobs */}
@@ -515,7 +596,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Scrollable candidate list */}
-                <div style={{ flex: '2 1 380px', maxHeight: '360px', overflowY: 'auto', borderRadius: '10px', border: '1.5px solid #e5e7eb' }}>
+                <div style={{ flex: '2 1 380px', maxHeight: '400px', overflowY: 'auto', borderRadius: '10px', border: '1.5px solid #e5e7eb' }}>
                   {candidates.length === 0 ? (
                     <p style={{ color: '#6b7280', fontSize: '0.9rem', padding: '20px' }}>No candidates created yet.</p>
                   ) : (
@@ -525,6 +606,7 @@ export default function AdminPage() {
                           <tr>
                             <th>Username</th>
                             <th>Password</th>
+                            <th>Assigned Resume</th>
                             <th>Submissions</th>
                             <th>Actions</th>
                           </tr>
@@ -552,6 +634,19 @@ export default function AdminPage() {
                                     {visiblePasswords.has(c.id) ? <EyeOff size={15} /> : <Eye size={15} />}
                                   </button>
                                 </div>
+                              </td>
+                              <td>
+                                <select
+                                  className="form-input"
+                                  style={{ padding: '5px 8px', fontSize: '0.78rem', width: '100%', maxWidth: '160px' }}
+                                  value={c.assignedResumeId || ''}
+                                  onChange={e => assignResume(c.id, e.target.value)}
+                                >
+                                  <option value="">— Not Assigned —</option>
+                                  {resumes.map(r => (
+                                    <option key={r.id} value={r.id}>{r.label}</option>
+                                  ))}
+                                </select>
                               </td>
                               <td>
                                 <span style={{ background: '#ede9fe', color: '#5b21b6', padding: '3px 8px', borderRadius: '12px', fontWeight: 700, fontSize: '0.8rem' }}>

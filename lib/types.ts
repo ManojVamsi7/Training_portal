@@ -33,6 +33,7 @@ export interface Candidate {
   submissions: SubmittedApplication[]; // rich submission records
   optimizedJobIds?: string[];         // jobs the candidate has optimized (bypasses timer)
   hiddenJobIds?: string[];            // jobs the candidate has manually hidden (expired/closed)
+  assignedResumeId?: string;          // ID of the resume from the library assigned by admin
 }
 
 export interface AuthUser {

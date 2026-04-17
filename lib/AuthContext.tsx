@@ -21,6 +21,7 @@ interface AuthContextType {
   ) => Promise<void>;
   markJobOptimized: (candidateId: string, jobId: string) => Promise<void>;
   hideJob: (candidateId: string, jobId: string) => Promise<void>;
+  assignResume: (candidateId: string, resumeId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -150,8 +151,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const assignResume = useCallback(async (candidateId: string, resumeId: string) => {
+    try {
+      await updateDoc(doc(db, 'candidates', candidateId), {
+        assignedResumeId: resumeId,
+      });
+    } catch (e) {
+      console.error('Error assigning resume', e);
+    }
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ currentUser, candidates, loading, login, logout, createCandidate, deleteCandidate, markJobSubmitted, markJobOptimized, hideJob }}>
+    <AuthContext.Provider value={{ currentUser, candidates, loading, login, logout, createCandidate, deleteCandidate, markJobSubmitted, markJobOptimized, hideJob, assignResume }}>
       {children}
     </AuthContext.Provider>
   );
