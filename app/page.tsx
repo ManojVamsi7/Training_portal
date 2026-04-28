@@ -28,8 +28,11 @@ export default function HomePage() {
   const [page, setPage]               = useState(1);
   const [csvError, setCsvError]       = useState('');
 
+  const [mounted, setMounted] = useState(false);
+
   // Auth Guard
   React.useEffect(() => {
+    setMounted(true);
     if (!authLoading) {
       if (!currentUser) router.push('/login');
       else if (currentUser.role === 'admin') router.push('/admin');
@@ -106,6 +109,8 @@ export default function HomePage() {
 
   // Candidate-specific resume
   const myResume = getResumeById(myCand?.assignedResumeId);
+
+  if (!mounted) return null;
 
   return (
     <div className="app-layout">
